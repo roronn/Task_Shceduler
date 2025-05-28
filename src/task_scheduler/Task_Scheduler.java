@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Calendar;
-import static javax.swing.JFrame.EXIT_ON_CLOSE;
 
 public class Task_Scheduler extends JFrame {
 
@@ -46,15 +45,16 @@ public class Task_Scheduler extends JFrame {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yy");
     private static final SimpleDateFormat DATETIME_FORMAT = new SimpleDateFormat("dd/MM/yy HH:mm");
 
-    private final DefaultTableModel tableModel;
-    private final JTable priorityTable;
-    private final JDateChooser dueDateChooser;
-    private final JTextField titleField;
-    private final JTextField timeInputField;
-    private final JButton addTaskButton;
-    private final JButton editTaskButton;
-    private final JButton exportButton;
-
+    private DefaultTableModel tableModel;
+    private JTable priorityTable;
+    private JDateChooser dueDateChooser;
+    private JTextField titleField;
+    private JTextField timeInputField;
+    private JButton addTaskButton;
+    private JButton editTaskButton;
+    private JButton exportButton;
+    private JButton deleteButton;
+    
     private int editingTaskId = -1; // -1 means no task is currently being edited
 
     public Task_Scheduler() {
@@ -105,49 +105,33 @@ public class Task_Scheduler extends JFrame {
                 String dueDateString = (String) getModel().getValueAt(row, 2);
                 String status = (String) getModel().getValueAt(row, 4);
 
-                if (this.isRowSelected(row)) {
-                    c.setForeground(getSelectionForeground());
+               
+                if ("Finish".equals(status)) {
+                    c.setForeground(new Color(0, 150, 0));  // GREEN
                 } else {
-                    c.setForeground(getForeground());
-                }
-
-                if (!this.isRowSelected(row)) {
-                    if ("Finish".equalsIgnoreCase(status)) {
-                        c.setForeground(new Color(0, 150, 0));
-                    } else {
-                        Date dueDate;
-                        try {
-                            dueDate = DATETIME_FORMAT.parse(dueDateString);
-                        } catch (ParseException e) {
-                            System.err.println("Error parsing due date for rendering: " + dueDateString + " - " + e.getMessage());
-                            c.setForeground(getForeground());
-                            return c;
-                        }
-
-                        Date now = new Date();
-
-                        Calendar calDueDate = Calendar.getInstance();
-                        calDueDate.setTime(dueDate);
-                        calDueDate.set(Calendar.HOUR_OF_DAY, 0);
-                        calDueDate.set(Calendar.MINUTE, 0);
-                        calDueDate.set(Calendar.SECOND, 0);
-                        calDueDate.set(Calendar.MILLISECOND, 0);
-
-                        Calendar calNow = Calendar.getInstance();
-                        calNow.setTime(now);
-                        calNow.set(Calendar.HOUR_OF_DAY, 0);
-                        calNow.set(Calendar.MINUTE, 0);
-                        calNow.set(Calendar.SECOND, 0);
-                        calNow.set(Calendar.MILLISECOND, 0);
-
-                        if (calDueDate.before(calNow)) {
-                            c.setForeground(Color.RED);
-                        } else if (calDueDate.equals(calNow) || calDueDate.before(addDays(calNow.getTime(), 3))) {
-                            c.setForeground(Color.BLACK);
-                        } else {
-                            c.setForeground(getForeground());
-                        }
+                    Date dueDate;
+                    try {
+                        dueDate = DATETIME_FORMAT.parse(dueDateString);
+                    } catch (ParseException e) {
+                        System.err.println("Error parsing due date for rendering: " + dueDateString + " - " + e.getMessage());
+                        c.setForeground(getForeground());
+                        return c;
                     }
+
+                    Date now = new Date();
+
+                    Calendar calDueDate = Calendar.getInstance();
+                    calDueDate.setTime(dueDate);
+                    
+                    Calendar calNow = Calendar.getInstance();
+                    calNow.setTime(now);            
+                   
+                    if (calDueDate.before(calNow)) {
+                        c.setForeground(Color.RED); 
+                    } else {
+                        c.setForeground(Color.BLACK); 
+                    }
+                    
                 }
                 return c;
             }
@@ -184,7 +168,7 @@ public class Task_Scheduler extends JFrame {
         JPanel bottomCenterPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10)); // FlowLayout.CENTER for center alignment
         editTaskButton = new JButton("Edit Task");
         bottomCenterPanel.add(editTaskButton);
-        JButton deleteButton = new JButton("Delete Task");
+        deleteButton = new JButton("Delete Task");
         bottomCenterPanel.add(deleteButton);
         mainBottomPanel.add(bottomCenterPanel, BorderLayout.CENTER); // Place in the CENTER of mainBottomPanel
 
@@ -209,8 +193,6 @@ public class Task_Scheduler extends JFrame {
                 loadSelectedTaskForEdit();
             }
         });
-
-
         loadTasks();
 
         setLocationRelativeTo(null);
@@ -225,7 +207,7 @@ public class Task_Scheduler extends JFrame {
 
      // CSV file always exists and has valid headers 
         try (CSVReader reader = new CSVReader(new FileReader(csvFile))) {
-            reader.readNext();
+            reader.readNext(); //skip
             String[] nextLine;
             while ((nextLine = reader.readNext()) != null) rows.add(nextLine);
         } catch (IOException | com.opencsv.exceptions.CsvValidationException e) {
@@ -269,10 +251,9 @@ public class Task_Scheduler extends JFrame {
         String combinedDateTime = DATE_FORMAT.format(selectedDate) + " " + timeText;
 
         if (title.isEmpty() || selectedDate == null || !timeText.matches("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$")) {
-            JOptionPane.showMessageDialog(this, "All fields (Title, Due Date, Time) are required and valid.", "Input Error", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "All fields (Title, Due Date, Time(HH:MM)) are required and valid.", "Input Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
-
         
         String[] newTaskData = {String.valueOf(getNextId()), title, combinedDateTime, "Medium", "In process"};
 
@@ -472,17 +453,7 @@ public class Task_Scheduler extends JFrame {
                 rank = 1;
                 break;
         }
-        return rank;
+        return rank;  
     }
 
-    private Date addDays(Date date, int days) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        cal.add(Calendar.DATE, days);
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        return cal.getTime();
-    }
 }
