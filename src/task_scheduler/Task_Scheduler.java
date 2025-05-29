@@ -41,7 +41,7 @@ public class Task_Scheduler extends JFrame {
     // --- Configuration Constants ---
     private static final String CSV_FILE_PATH = "data/testdata.csv";
     private static final String EXPORT_DIRECTORY = "ExportData";
-    private static final String[] CSV_HEADERS = {"ID", "Title", "Due Date (dd/MM/yy HH:MM)", "Priority", "Status"};
+    private static final String[] CSV_HEADERS = {"Task Number", "Title", "Due Date (dd/MM/yy HH:MM)", "Priority", "Status"};
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yy");
     private static final SimpleDateFormat DATETIME_FORMAT = new SimpleDateFormat("dd/MM/yy HH:mm");
 
@@ -89,7 +89,7 @@ public class Task_Scheduler extends JFrame {
         add(topPanel, BorderLayout.NORTH);
 
         // --- Table Setup ---
-        String[] columns = {"ID", "Title", "Due Date (dd/mm/yy)", "Priority", "Status"};
+        String[] columns = {"Task Number", "Title", "Due Date (dd/mm/yy)", "Priority", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -249,9 +249,10 @@ public class Task_Scheduler extends JFrame {
         Date selectedDate = dueDateChooser.getDate();
         String timeText = timeInputField.getText().trim();
         String combinedDateTime = DATE_FORMAT.format(selectedDate) + " " + timeText;
-
-        if (title.isEmpty() || selectedDate == null || !timeText.matches("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$")) {
-            JOptionPane.showMessageDialog(this, "All fields (Title, Due Date, Time(HH:MM)) are required and valid.", "Input Error", JOptionPane.WARNING_MESSAGE);
+        Date calNow = (new Date());
+       
+        if (title.isEmpty() || selectedDate == null || !timeText.matches("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$" ) || selectedDate.before(calNow)) {
+        	JOptionPane.showMessageDialog(this, "Please fill in all required fields (Title, Due Date, Time (HH:MM)).\nEnsure the date is valid and not in the past.", "Input Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
@@ -302,7 +303,7 @@ public class Task_Scheduler extends JFrame {
             writeAllCsvRows(currentTasks);
             loadTasks();
         } else {
-            JOptionPane.showMessageDialog(this, "Task ID " + taskId + " not found for update.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Task Number " + taskId + " not found for update.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -337,9 +338,10 @@ public class Task_Scheduler extends JFrame {
         String title = titleField.getText().trim();
         Date selectedDate = dueDateChooser.getDate();
         String timeText = timeInputField.getText().trim();
+        Date calNow = (new Date());
 
-        if (title.isEmpty() || selectedDate == null || !timeText.matches("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$")) {
-            JOptionPane.showMessageDialog(this, "All fields (Title, Due Date, Time) are required and valid.", "Input Error", JOptionPane.WARNING_MESSAGE);
+        if (title.isEmpty() || selectedDate == null || !timeText.matches("^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$" ) || selectedDate.before(calNow)) {
+        	JOptionPane.showMessageDialog(this, "Please fill in all required fields (Title, Due Date, Time (HH:MM)).\nEnsure the date is valid and not in the past.", "Input Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
@@ -362,7 +364,7 @@ public class Task_Scheduler extends JFrame {
             loadTasks();
             resetEditModeUI();
         } else if (!found) {
-            JOptionPane.showMessageDialog(this, "Error: Task ID " + editingTaskId + " not found for editing.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Error: Task Number " + editingTaskId + " not found for editing.", "Error", JOptionPane.ERROR_MESSAGE);
             resetEditModeUI();
         }
     }
